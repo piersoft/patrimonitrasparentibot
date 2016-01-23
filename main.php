@@ -30,8 +30,11 @@ function start($telegram,$update)
 {
 	date_default_timezone_set('Europe/Rome');
 	$today = date("Y-m-d H:i:s");
+	if (strpos($text,'/') !== false)	{
+		$text=str_replace("/","",$text);
+	}
 
-	if ($text == "/start" || $text == "Informazioni") {
+	if ($text == "/start" || $text == "Informazioni" || $text == "start") {
 		$img = curl_file_create('logo.png','image/png');
 		$contentp = array('chat_id' => $chat_id, 'photo' => $img);
 		$telegram->sendPhoto($contentp);
@@ -68,11 +71,11 @@ exit;
 
 				if (strpos($text,'i:') !== false){
 					$text=str_replace("i:","",$text);
-					$location="Sto cercando i parlamentari eletti con incarico: ".$text;
+					$location="Sto cercando i parlamentari eletti,ordinati per reddito dichiarato, con incarico: ".$text;
 					$filtro="upper(F)";
 				}else if (strpos($text,'c:') !== false){
 					$text=str_replace("c:","",$text);
-					$location="Sto cercando i parlamentari eletti nella circoscrizione: ".$text;
+					$location="Sto cercando i parlamentari,ordinati per reddito dichiarato, eletti nella circoscrizione: ".$text;
 					$filtro="upper(I)";
 				}
 				$content = array('chat_id' => $chat_id, 'text' => $location,'disable_web_page_preview'=>true);
@@ -111,13 +114,27 @@ exit;
 													return $text;
 					}
 						$homepage .="\n";
+
+					//	sort($csv);
+	//define a comparison function
+	function cmp($a, $b) {
+	    if ($a[9] == $b[9]) {
+	        return 0;
+	    }
+	    return ($a[9] < $b[9]) ? -1 : 1;
+	}
+
+	usort($csv, "cmp");
+
 				for ($i=$inizio;$i<$count;$i++){
 
 					$homepage .="\n";
-					$homepage .=strtoupper($csv[$i][1])." ".strtoupper($csv[$i][2])."\n";
-					$homepage .="Per i dettagli digita: ".$csv[$i][0]."\n";
+					if (strtoupper($csv[$i][1]) !="NOME"){
+						$homepage .=strtoupper($csv[$i][1])." ".strtoupper($csv[$i][2])."\n";
+					if($csv[$i][9] !=NULL)		$homepage .="Totale 730 dichiarato: € ".$csv[$i][9]."\n";
+					$homepage .="Per i dettagli digita: ".$csv[$i][0]." oppure clicca: 	/".$csv[$i][0]."\n";
 					$homepage .="____________\n";
-
+					}
 				}
 				$chunks = str_split($homepage, self::MAX_LENGTH);
 				foreach($chunks as $chunk) {
@@ -136,7 +153,8 @@ exit;
 //			$urlgd  ="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20A%2CC%2CD%2CG%2CH%2CP%2CL%2CM%2CO%2CJ%2CK%20WHERE%20N%20IS%20NOT%20NULL";
 
 
-		}elseif (strpos($text,'1') !== false || strpos($text,'2') !== false || strpos($text,'3') !== false || strpos($text,'4') !== false || strpos($text,'5') !== false || strpos($text,'6') !== false || strpos($text,'7') !== false || strpos($text,'8') !== false || strpos($text,'9') !== false || strpos($text,'0') !== false ){
+		}elseif (strpos($text,'/') === false || strpos($text,'1') !== false || strpos($text,'2') !== false || strpos($text,'3') !== false || strpos($text,'4') !== false || strpos($text,'5') !== false || strpos($text,'6') !== false || strpos($text,'7') !== false || strpos($text,'8') !== false || strpos($text,'9') !== false || strpos($text,'0') !== false ){
+	$text=str_replace("/","",$text);
 			$location="Sto cercando l'ID: ".$text;
 			$content = array('chat_id' => $chat_id, 'text' => $location,'disable_web_page_preview'=>true);
 			$telegram->sendMessage($content);
@@ -190,9 +208,9 @@ exit;
 		if($csv[$i][6] !=NULL)		$homepage .="Lista di elezione/partito: ".$csv[$i][6]."\n";
 		if($csv[$i][7] !=NULL)		$homepage .="Gruppo parlamentare: ".$csv[$i][7]."\n";
 		if($csv[$i][8] !=NULL)		$homepage .="Circoscrizione di elezione: ".$csv[$i][8]."\n";
-		if($csv[$i][9] !=NULL)		$homepage .="Totale 730 dichiarato: ".$csv[$i][9]."\n";
-		if($csv[$i][10] !=NULL)		$homepage .="Totale 730 coniuge: ".$csv[$i][10]."\n";
-		if($csv[$i][11] !=NULL)		$homepage .="Totale contributi: ".$csv[$i][11]."\n";
+		if($csv[$i][9] !=NULL)		$homepage .="Totale 730 dichiarato: € ".$csv[$i][9]."\n";
+		if($csv[$i][10] !=NULL)		$homepage .="Totale 730 coniuge: € ".$csv[$i][10]."\n";
+		if($csv[$i][11] !=NULL)		$homepage .="Totale contributi: € ".$csv[$i][11]."\n";
 		if($csv[$i][12] !=NULL)		$homepage .="Totale spese elettorali: ".$csv[$i][12]."\n";
 		if($csv[$i][13] !=NULL)		$homepage .="Indice di completezza: ".$csv[$i][13]."\n";
 		if($csv[$i][14] !=NULL)		$homepage .="Note completezza: ".$csv[$i][14]."\n";
